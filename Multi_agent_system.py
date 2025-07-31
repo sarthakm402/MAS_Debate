@@ -5,7 +5,7 @@
 # from langgraph.graph import StateGraph
 # from typing import TypedDict, List
 
-# genai.configure(api_key="AIzaSyBDopiFyq_IpE6WT3vaHoV6cV8pByUUHIg")
+# genai.configure(api_key="")
 # model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 # memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", k=3)
