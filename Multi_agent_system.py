@@ -121,7 +121,7 @@ from langchain.schema import messages_to_dict, messages_from_dict
 from langgraph.graph import StateGraph
 from typing import TypedDict, Optional
 
-genai.configure(api_key="")
+genai.configure(api_key="YOUR API KEY")
 model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", k=3)
