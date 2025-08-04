@@ -1,4 +1,4 @@
-# import os
+# import os 
 # import google.generativeai as genai
 # from langchain.memory import ConversationBufferMemory
 # from langchain.schema import messages_to_dict, messages_from_dict
@@ -262,3 +262,4 @@ if __name__ == '__main__':
     for msg in memory.chat_memory.messages:
         print(f"{msg.type}: {msg.content}")
     print("Final Verdict:", result["verdict"])
+
