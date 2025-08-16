@@ -1,4 +1,4 @@
-# Multi-Agent System — Debate Demo
+# Multi-Agent System — Debate Demo  
  
 **Multi-Agent System — Debate Demo** is a lightweight FastAPI application that demonstrates a multi-agent debate pipeline using Google Generative AI (Gemini), LangChain-style memory, and a state graph (via `langgraph`) to orchestrate agents: **For**, **Against**, **FactChecker**, and **Mediator**.
 
