@@ -5,7 +5,7 @@
 # from langgraph.graph import StateGraph
 # from typing import TypedDict, List
 
-# genai.configure(api_key="AIzaSyBDopiFyq_IpE6WT3vaHoV6cV8pByUUHIg")
+# genai.configure(api_key="api key here ")
 # model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 # memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", k=3)
@@ -120,7 +120,7 @@ from langchain.memory import ConversationBufferMemory
 from langgraph.graph import StateGraph
 
 # ---------- GOOGLE GENAI CONFIG ----------
-genai.configure(api_key="AIzaSyBDopiFyq_IpE6WT3vaHoV6cV8pByUUHIg")
+genai.configure(api_key="API KEY HERE")
 model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 # ---------- MEMORY ----------
@@ -333,3 +333,4 @@ def debate_get(topic: str):
 @app.post("/debate")
 def debate_post(topics: DebateTopic):
     return run_debate_logic(topics.topic)
+
