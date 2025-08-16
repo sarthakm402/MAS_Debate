@@ -1,12 +1,12 @@
- # import os  
+# import os
 # import google.generativeai as genai
 # from langchain.memory import ConversationBufferMemory
 # from langchain.schema import messages_to_dict, messages_from_dict
 # from langgraph.graph import StateGraph
 # from typing import TypedDict, List
- 
-# genai.configure(api_key="ADD YOUR API KEY")
-# model = genai.GenerativeModel("YOUR MODEL OF CHOICE")
+
+# genai.configure(api_key="AIzaSyBDopiFyq_IpE6WT3vaHoV6cV8pByUUHIg")
+# model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 # memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", k=3)
 
@@ -112,20 +112,21 @@
 
 
 
-
-
-import os
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import TypedDict, Optional
 import google.generativeai as genai
 from langchain.memory import ConversationBufferMemory
-from langchain.schema import messages_to_dict, messages_from_dict
 from langgraph.graph import StateGraph
-from typing import TypedDict, Optional
 
-genai.configure(api_key="YOUR API KEY")
-model = genai.GenerativeModel("MODEL OF YOURN CHOICE")
+# ---------- GOOGLE GENAI CONFIG ----------
+genai.configure(api_key="AIzaSyBDopiFyq_IpE6WT3vaHoV6cV8pByUUHIg")
+model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
-memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", k=3)
+# ---------- MEMORY ----------
+memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
+# ---------- PROMPTS ----------
 FOR_PROMPT = """
 Conversation history:
 {history}
@@ -182,63 +183,78 @@ MEDIATOR_PROMPT = """
 Conversation history:
 {history}
 
-You are a neutral moderator. Two arguments have been presented:
+You are a neutral moderator. Two arguments have been presented.
 Use the above conversation to analyze both sides on logic, facts, and persuasiveness, then declare which side wins and why.
 """
 
+# ---------- STATE ----------
 class DebateState(TypedDict):
     topic: str
+    round_number: int
     for_argument: Optional[str]
     against_argument: Optional[str]
     fact_check: Optional[str]
     verdict: Optional[str]
 
-def for_agent(state: DebateState) -> DebateState:
+# ---------- AGENTS ----------
+def for_agent(state: DebateState) -> dict:
     history = memory.load_memory_variables({})["chat_history"]
     prev = state.get("for_argument", "") or ""
+    round_number = state["round_number"] + 1  # Increment round number
+
     if state.get("fact_check") and prev:
         prompt = FOR_REVISION_PROMPT.format(history=history, previous=prev, feedback=state["fact_check"])
     else:
         prompt = FOR_PROMPT.format(history=history, topic=state["topic"])
+
     response = model.generate_content(prompt)
     arg = response.text.strip()
-    state["for_argument"] = arg
+
     memory.chat_memory.add_user_message(f"FOR request: {state['topic']}")
     memory.chat_memory.add_ai_message(arg)
-    return state
 
-def against_agent(state: DebateState) -> DebateState:
+    return {"for_argument": arg, "round_number": round_number}
+
+def against_agent(state: DebateState) -> dict:
     history = memory.load_memory_variables({})["chat_history"]
     prev = state.get("against_argument", "") or ""
+
     if state.get("fact_check") and prev:
         prompt = AGAINST_REVISION_PROMPT.format(history=history, previous=prev, feedback=state["fact_check"])
     else:
         prompt = AGAINST_PROMPT.format(history=history, topic=state["topic"])
+
     response = model.generate_content(prompt)
     arg = response.text.strip()
-    state["against_argument"] = arg
+
     memory.chat_memory.add_user_message(f"AGAINST request: {state['topic']}")
     memory.chat_memory.add_ai_message(arg)
-    return state
 
-def fact_checker(state: DebateState) -> DebateState:
+    return {"against_argument": arg}
+
+def fact_checker(state: DebateState) -> dict:
     history = memory.load_memory_variables({})["chat_history"]
     prompt = FACT_CHECK_PROMPT.format(history=history)
     response = model.generate_content(prompt)
-    state["fact_check"] = response.text.strip()
-    memory.chat_memory.add_user_message("FACT CHECK request")
-    memory.chat_memory.add_ai_message(state["fact_check"])
-    return state
+    fc = response.text.strip()
 
-def mediator(state: DebateState) -> DebateState:
+    memory.chat_memory.add_user_message("FACT CHECK request")
+    memory.chat_memory.add_ai_message(fc)
+
+    return {"fact_check": fc}
+
+def mediator(state: DebateState) -> dict:
     history = memory.load_memory_variables({})["chat_history"]
     prompt = MEDIATOR_PROMPT.format(history=history)
     response = model.generate_content(prompt)
-    state["verdict"] = response.text.strip()
-    memory.chat_memory.add_user_message("MEDIATOR request")
-    memory.chat_memory.add_ai_message(state["verdict"])
-    return state
+    verdict_text = response.text.strip()
 
+    memory.chat_memory.add_user_message("MEDIATOR request")
+    memory.chat_memory.add_ai_message(verdict_text)
+
+    return {"verdict": verdict_text}
+
+# ---------- STATE GRAPH ----------
 graph = StateGraph(DebateState)
 graph.add_node("ForAgent", for_agent)
 graph.add_node("AgainstAgent", against_agent)
@@ -246,21 +262,74 @@ graph.add_node("FactChecker", fact_checker)
 graph.add_node("Mediator", mediator)
 
 graph.set_entry_point("ForAgent")
-graph.add_edge("ForAgent", "AgainstAgent")
+
+# Decide after ForAgent
+def check_rounds_after_for(state: DebateState):
+    if state["round_number"] >= 3:
+        return "Mediator"
+    else:
+        return "AgainstAgent"
+
+graph.add_conditional_edges("ForAgent", check_rounds_after_for, {
+    "AgainstAgent": "AgainstAgent",
+    "Mediator": "Mediator"
+})
+
+# Always go from AgainstAgent → FactChecker
 graph.add_edge("AgainstAgent", "FactChecker")
-graph.add_edge("FactChecker", "ForAgent")
-graph.add_edge("ForAgent", "AgainstAgent")
-graph.add_edge("AgainstAgent", "Mediator")
+
+# Decide after FactChecker
+def check_rounds_after_fact(state: DebateState):
+    if state["round_number"] >= 3:
+        return "Mediator"
+    else:
+        return "ForAgent"
+
+graph.add_conditional_edges("FactChecker", check_rounds_after_fact, {
+    "ForAgent": "ForAgent",
+    "Mediator": "Mediator"
+})
+
 graph.set_finish_point("Mediator")
 
 runnable = graph.compile()
 
-if __name__ == '__main__':
-    topic = "Should AI be regulated by governments?"
-    initial_state = {"topic": topic, "for_argument": None, "against_argument": None, "fact_check": None, "verdict": None}
+# ---------- FASTAPI ----------
+app = FastAPI(title="MULTI AGENT SYSTEM DEBATE DEMO", version="1.3")
+
+class DebateTopic(BaseModel):
+    topic: str
+
+def run_debate_logic(topic: str):
+    initial_state = {
+        "topic": topic,
+        "round_number": 0,
+        "for_argument": None,
+        "against_argument": None,
+        "fact_check": None,
+        "verdict": None
+    }
     result = runnable.invoke(initial_state)
-    for msg in memory.chat_memory.messages:
-        print(f"{msg.type}: {msg.content}")
-    print("Final Verdict:", result["verdict"])
+    return {
+        "topic": topic,
+        "for_argument": result["for_argument"],
+        "against_argument": result["against_argument"],
+        "fact_check": result["fact_check"],
+        "verdict": result["verdict"],
+        "conversation_history": [
+            {"role": m.type, "content": m.content}
+            for m in memory.chat_memory.messages
+        ]
+    }
 
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
+@app.get("/debate")
+def debate_get(topic: str):
+    return run_debate_logic(topic)
+
+@app.post("/debate")
+def debate_post(topics: DebateTopic):
+    return run_debate_logic(topics.topic)
