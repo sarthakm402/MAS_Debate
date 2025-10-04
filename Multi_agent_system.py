@@ -137,7 +137,7 @@ Make sure your response is logical, persuasive, and concise.
 """
 
 FOR_REVISION_PROMPT = """
-Conversation history:
+Conversation history: 
 {history}
 
 Your previous 'for' argument:
@@ -333,5 +333,6 @@ def debate_get(topic: str):
 @app.post("/debate")
 def debate_post(topics: DebateTopic):
     return run_debate_logic(topics.topic)
+
 
 
