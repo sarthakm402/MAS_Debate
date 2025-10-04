@@ -5,7 +5,7 @@
 # from langgraph.graph import StateGraph
 # from typing import TypedDict, List
 
-# genai.configure(api_key="api key here ")
+# genai.configure(api_key="api key her e ")
 # model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 # memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", k=3)
@@ -333,6 +333,7 @@ def debate_get(topic: str):
 @app.post("/debate")
 def debate_post(topics: DebateTopic):
     return run_debate_logic(topics.topic)
+
 
 
 
