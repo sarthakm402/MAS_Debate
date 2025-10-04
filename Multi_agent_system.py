@@ -334,3 +334,4 @@ def debate_get(topic: str):
 def debate_post(topics: DebateTopic):
     return run_debate_logic(topics.topic)
 
+
