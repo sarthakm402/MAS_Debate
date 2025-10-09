@@ -5,7 +5,7 @@
 --- 
     
 ## Features 
- 
+  
 - Multi-round debate flow with revision based on fact-check feedback
 - Conversation memory (recent messages) using `ConversationBufferMemory`
 - Agents implemented as state graph nodes (`ForAgent`, `AgainstAgent`, `FactChecker`, `Mediator`)
