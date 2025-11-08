@@ -1,6 +1,6 @@
  # import os
 # import google.generativeai as genai
-# from langchain.memory import ConversationBufferMemory
+# from langchain.memory import ConversationBufferMemory 
 # from langchain.schema import messages_to_dict, messages_from_dict
 # from langgraph.graph import StateGraph 
 # from typing import TypedDict, List
@@ -333,6 +333,7 @@ def debate_get(topic: str):
 @app.post("/debate")
 def debate_post(topics: DebateTopic):
     return run_debate_logic(topics.topic)
+
 
 
 
