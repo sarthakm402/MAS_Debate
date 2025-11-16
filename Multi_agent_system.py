@@ -4,7 +4,7 @@
 # from langchain.schema import messages_to_dict, messages_from_dict
 # from langgraph.graph import StateGraph 
 # from typing import TypedDict, List
-
+ 
 # genai.configure(api_key="api key her e ")
 # model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
@@ -333,6 +333,7 @@ def debate_get(topic: str):
 @app.post("/debate")
 def debate_post(topics: DebateTopic):
     return run_debate_logic(topics.topic)
+
 
 
 
