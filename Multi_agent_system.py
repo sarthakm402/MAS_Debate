@@ -119,14 +119,14 @@ import google.generativeai as genai
 from langchain.memory import ConversationBufferMemory
 from langgraph.graph import StateGraph
 
-# ---------- GOOGLE GENAI CONFIG ----------
+# GOOGLE GENAI CONFIG
 genai.configure(api_key="API KEY HERE")
 model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
-# ---------- MEMORY ----------
+# MEMORY
 memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
-# ---------- PROMPTS ----------
+#  PROMPTS
 FOR_PROMPT = """
 Conversation history:
 {history}
@@ -187,7 +187,7 @@ You are a neutral moderator. Two arguments have been presented.
 Use the above conversation to analyze both sides on logic, facts, and persuasiveness, then declare which side wins and why.
 """
 
-# ---------- STATE ----------
+# STATE 
 class DebateState(TypedDict):
     topic: str
     round_number: int
@@ -196,7 +196,7 @@ class DebateState(TypedDict):
     fact_check: Optional[str]
     verdict: Optional[str]
 
-# ---------- AGENTS ----------
+# AGENTS 
 def for_agent(state: DebateState) -> dict:
     history = memory.load_memory_variables({})["chat_history"]
     prev = state.get("for_argument", "") or ""
@@ -254,7 +254,7 @@ def mediator(state: DebateState) -> dict:
 
     return {"verdict": verdict_text}
 
-# ---------- STATE GRAPH ----------
+# STATE GRAPH 
 graph = StateGraph(DebateState)
 graph.add_node("ForAgent", for_agent)
 graph.add_node("AgainstAgent", against_agent)
@@ -294,7 +294,7 @@ graph.set_finish_point("Mediator")
 
 runnable = graph.compile()
 
-# ---------- FASTAPI ----------
+#  FASTAPI 
 app = FastAPI(title="MULTI AGENT SYSTEM DEBATE DEMO", version="1.3")
 
 class DebateTopic(BaseModel):
@@ -333,6 +333,7 @@ def debate_get(topic: str):
 @app.post("/debate")
 def debate_post(topics: DebateTopic):
     return run_debate_logic(topics.topic)
+
 
 
 
